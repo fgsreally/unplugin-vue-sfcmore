@@ -1,0 +1,56 @@
+{
+  "name": "unplugin-vue-sfcmore",
+  "version": "1.0.0",
+  "description": "custom sfc resolver",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup"
+  },
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    },
+    "./vite": {
+      "import": "./dist/vite.mjs",
+      "require": "./dist/vite.js"
+    },
+    "./webpack": {
+      "import": "./dist/webpack.mjs",
+      "require": "./dist/webpack.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "types": [
+        "dist/index.d.ts"
+      ],
+      "vite": [
+        "dist/vite.d.ts"
+      ],
+      "webpack": [
+        "dist/webpack.d.ts"
+      ]
+    }
+  },
+  "keywords": [],
+  "author": "fgsreally",
+  "license": "MIT",
+  "dependencies": {
+    "@vue/compiler-dom": "^3.2.45",
+    "magic-string": "^0.26.7",
+    "unplugin": "^1.0.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^0.31.0",
+    "eslint": "^8.28.0",
+    "tsup": "^6.5.0",
+    "typescript": "^4.9.3"
+  }
+}
