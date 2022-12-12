@@ -28,9 +28,6 @@
   },
   "typesVersions": {
     "*": {
-      "types": [
-        "dist/index.d.ts"
-      ],
       "vite": [
         "dist/vite.d.ts"
       ],

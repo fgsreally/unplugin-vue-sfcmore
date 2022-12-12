@@ -66,7 +66,6 @@ export const sfcmore = createUnplugin((options: { version?: string; extensions?:
       },
       transform(code: string, id: string) {
         if (isSfc(id) && codeMap.has(`${id}?vue&addon`)) {
-          console.log(mode, isLib)
           if (mode === 'serve')
             return `${code}\n${codeMap.get(`${id}?vue&addon`)}`
 
