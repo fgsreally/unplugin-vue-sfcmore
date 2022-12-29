@@ -5,6 +5,7 @@ importers:
   .:
     specifiers:
       '@antfu/eslint-config': ^0.31.0
+      '@types/node': ^18.11.18
       '@vue/compiler-dom': ^3.2.45
       eslint: ^8.28.0
       magic-string: ^0.26.7
@@ -17,6 +18,7 @@ importers:
       unplugin: registry.npmmirror.com/unplugin/1.0.0
     devDependencies:
       '@antfu/eslint-config': registry.npmmirror.com/@antfu/eslint-config/0.31.0_hsf322ms6xhhd4b5ne6lb74y4a
+      '@types/node': registry.npmmirror.com/@types/node/18.11.18
       eslint: registry.npmmirror.com/eslint/8.28.0
       tsup: registry.npmmirror.com/tsup/6.5.0_typescript@4.9.3
       typescript: registry.npmmirror.com/typescript/4.9.3
@@ -304,6 +306,12 @@ packages:
     version: 3.0.10
     dependencies:
       '@types/unist': registry.npmmirror.com/@types/unist/2.0.6
+    dev: true
+
+  registry.npmmirror.com/@types/node/18.11.18:
+    resolution: {integrity: sha512-DHQpWGjyQKSHj3ebjFI/wRKcqQcdR+MoFBygntYOZytCqNfkd2ZC4ARDJ2DQqhjH5p85Nnd3jhUJIXrszFX/JA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@types/node/-/node-18.11.18.tgz}
+    name: '@types/node'
+    version: 18.11.18
     dev: true
 
   registry.npmmirror.com/@types/normalize-package-data/2.4.1:
