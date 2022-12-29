@@ -11,11 +11,16 @@ export const Server = {
 }
 
 export const Docs = {
-
   tag: 'docs',
-  key: 'docs',
   transformer: (code: string) => {
     return `export let docs=${JSON.stringify(code)}`
+  },
+}
+
+export const Meta = {
+  tag: 'm',
+  transformer: (code: string) => {
+    return `export let meta=${code}`
   },
 }
 
@@ -31,4 +36,4 @@ export const addonCss = (url: string) => `
   export let css= ${url}
   `
 
-export const defaultExtensions = [Type, Docs, Server, Test]
+export const defaultExtensions = [Type, Docs, Server, Test, Meta]

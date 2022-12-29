@@ -1,5 +1,5 @@
 export interface Extension {
-  key: string
+  key?: string
   tag: string
   transformer?: (code: string) => string
 }
