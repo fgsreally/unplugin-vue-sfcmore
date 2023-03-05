@@ -1,1 +1,1 @@
-export const App = import('./App.vue')
+import('./components/HelloWorld.vue')

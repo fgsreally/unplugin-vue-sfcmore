@@ -1,13 +1,13 @@
-export const Test = {
-  tag: 'script',
-  key: 'test',
+export const Props = {
+  tag: 'props',
   transformer: (code: string) => {
-    return `export let test=(()=>{${code}})()`
+    return `export let props=(()=>{${code}})()`
   },
 }
 
 export const Server = {
-  key: 'server', tag: 'script',
+  tag: 'server',
+
 }
 
 export const Docs = {
@@ -17,23 +17,23 @@ export const Docs = {
   },
 }
 
-export const Meta = {
-  tag: 'm',
+export const Info = {
+  tag: 'info',
   transformer: (code: string) => {
-    return `export let meta=${code}`
+    return `export let info=${code}`
   },
 }
 
-export const Type = {
-  tag: 'script',
-  key: 'type',
-  transformer: (code: string) => {
-    return `export let type=${JSON.stringify(code)}`
-  },
-}
+// export const Type = {
+//   tag: 'script',
+//   key: 'type',
+//   transformer: (code: string) => {
+//     return `export let type=${JSON.stringify(code)}`
+//   },
+// }
 
 export const addonCss = (url: string) => `
   export let css= ${url}
   `
 
-export const defaultExtensions = [Type, Docs, Server, Test, Meta]
+export const defaultExtensions = [Docs, Server, Props, Info]

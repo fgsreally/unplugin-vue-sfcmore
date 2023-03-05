@@ -6,11 +6,11 @@ defineProps<{ msg: string }>()
 const count = ref(0)
 </script>
 
-<script test>
+<props lang="ts">
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 return [{ name: 'test' }]
-</script>
+</props>
 
 <template>
   <h1>{{ msg }}</h1>
@@ -46,7 +46,12 @@ return [{ name: 'test' }]
 }
 </style>
 
-<m>
-{name:"HelloWorld"}
-</m>
+<docs lang="md">
+  ## info
+</docs>
 
+<info lang="json">
+{
+  "name":"HelloWorld"
+}
+</info>

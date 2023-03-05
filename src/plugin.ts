@@ -3,11 +3,16 @@ import { createUnplugin } from 'unplugin'
 import { compile } from './compiler'
 import { addonCss, defaultExtensions } from './extensions'
 import type { Extension } from './type'
+export const codeMap: Map<string, string> = new Map()
 
-export const sfcmore = createUnplugin((options: { version?: string; extensions?: Extension[] } = {}) => {
+export function addAddon(id: string, addon: string) {
+  const origin = codeMap.get(id) || ''
+  codeMap.set(id, origin + addon)
+}
+
+export const sfcmore = createUnplugin((options: { version?: string; extensions?: Extension[]; copysource?: boolean } = {}) => {
   let isLib = false
   let mode: string
-  const codeMap: Map<string, string> = new Map()
 
   return [
     {
@@ -22,7 +27,7 @@ export const sfcmore = createUnplugin((options: { version?: string; extensions?:
           if (code !== source) {
             codeMap.set(
               `${id}?vue&addon`,
-              `${addon}\nexport let code=${JSON.stringify(code)}`,
+              `${addon}\n${options.copysource ? `export let code=${JSON.stringify(code)}` : ''}`,
             )
           }
           return code
