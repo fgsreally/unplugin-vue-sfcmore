@@ -14,5 +14,9 @@ export default defineConfig({
       external: ['vue'],
     },
   },
+
   plugins: [vue(), sfc()],
+  server: {
+    port: 4000,
+  },
 })

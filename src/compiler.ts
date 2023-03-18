@@ -16,7 +16,7 @@ export function compile(code: string, extensions: Extension[]) {
   })
 
   return {
-    code: ms.toString(),
+    ms,
     addon,
   }
 }

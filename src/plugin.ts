@@ -1,12 +1,13 @@
 import { basename } from 'path'
 import { createUnplugin } from 'unplugin'
+import MagicString from 'magic-string'
 import { compile } from './compiler'
 import { addonCss, defaultExtensions } from './extensions'
 import type { Extension } from './type'
 export const codeMap: Map<string, string> = new Map()
 
-export function addAddon(id: string, addon: string) {
-  const origin = codeMap.get(id) || ''
+export function addAddon(id: string, addon: string, mode: string) {
+  const origin = codeMap.get(id) || `export const unplugin_vue_sfcmore="${mode}"\n`
   codeMap.set(id, origin + addon)
 }
 
@@ -19,18 +20,23 @@ export const sfcmore = createUnplugin((options: { version?: string; extensions?:
       name: 'sfcmore:pre',
       enforce: 'pre',
       transform(source: string, id: string) {
-        if (isSfc(id)) {
-          const { code, addon } = compile(
+        if (isSfc(id) && !codeMap.has(`${id}?vue&addon`)) {
+          const { ms, addon } = compile(
             source,
             (options.extensions || defaultExtensions),
           )
+          const code = ms.toString()
           if (code !== source) {
-            codeMap.set(
+            addAddon(
               `${id}?vue&addon`,
               `${addon}\n${options.copysource ? `export let code=${JSON.stringify(code)}` : ''}`,
+              mode,
             )
           }
-          return code
+          return {
+            code,
+            map: ms.generateMap(),
+          }
         }
       },
       vite: {
@@ -71,8 +77,15 @@ export const sfcmore = createUnplugin((options: { version?: string; extensions?:
       },
       transform(code: string, id: string) {
         if (isSfc(id) && codeMap.has(`${id}?vue&addon`)) {
-          if (mode === 'serve')
-            return `${code}\n${codeMap.get(`${id}?vue&addon`)}`
+          const ms = new MagicString(code)
+
+          if (mode === 'serve') {
+            ms.appendRight(code.length, codeMap.get(`${id}?vue&addon`) as string)
+            return {
+              code: ms.toString(), map: ms.generateMap(),
+
+            }
+          }
 
           if (isLib) {
             const addonCode
@@ -80,13 +93,12 @@ export const sfcmore = createUnplugin((options: { version?: string; extensions?:
                    return await import("${id}?vue&addon");
                  }`
 
-            return (
-             `${code
-                 }\n${
-                 addonCode
-                 }${addonCss('import.meta.url.replace(/\\.js(.*)/,\'.css\')')}`
+            ms.appendRight(code.length, `${addonCode}\n${addonCss('import.meta.url.replace(/\\.js(.*)/,\'.css\')')}`)
 
-            )
+            return {
+              code: ms.toString(), map: ms.generateMap(),
+
+            }
           }
         }
       },
