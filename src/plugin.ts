@@ -1,41 +1,59 @@
-import { basename } from 'path'
+import { join } from 'path'
+import fs from 'fs'
 import { createUnplugin } from 'unplugin'
 import MagicString from 'magic-string'
+import type { MetaCheckerOptions } from 'vue-component-meta'
+import { createComponentMetaChecker } from 'vue-component-meta'
 import { compile } from './compiler'
 import { addonCss, defaultExtensions } from './extensions'
 import type { Extension } from './type'
-export const codeMap: Map<string, string> = new Map()
+import { addonPostFix, assetFileNames, chunkFileNames, manualChunks } from './utils'
+
+const codeMap: Map<string, string> = new Map()
 
 export function addAddon(id: string, addon: string, mode: string) {
+  id = id + addonPostFix
   const origin = codeMap.get(id) || `export const unplugin_vue_sfcmore="${mode}"\n`
   codeMap.set(id, origin + addon)
 }
 
-export const sfcmore = createUnplugin((options: { version?: string; extensions?: Extension[]; copysource?: boolean } = {}) => {
+export const sfcmore = createUnplugin((options: { meta?: boolean; version?: string; extensions?: Extension[]; copysource?: boolean; checkerOptions?: MetaCheckerOptions } = {}) => {
   let isLib = false
+
   let mode: string
 
+  const { checkerOptions = {}, meta = true, version, copysource, extensions } = options
+  const tsconfigChecker = createComponentMetaChecker(
+    // Write your tsconfig path
+    join(process.cwd(), 'tsconfig.json'),
+    checkerOptions,
+  )
+
+  function clearCache() {
+    codeMap.clear()
+    tsconfigChecker.clearCache()
+  }
   return [
     {
       name: 'sfcmore:pre',
       enforce: 'pre',
       transform(source: string, id: string) {
-        if (isSfc(id) && !codeMap.has(`${id}?vue&addon`)) {
+        if (isSfc(id) && !codeMap.has(`${id}${addonPostFix}`)) {
           const { ms, addon } = compile(
             source,
-            (options.extensions || defaultExtensions),
+            (extensions || defaultExtensions),
           )
           const code = ms.toString()
           if (code !== source) {
             addAddon(
-              `${id}?vue&addon`,
-              `${addon}\n${options.copysource ? `export let code=${JSON.stringify(code)}` : ''}`,
+              id,
+              `${addon}\n${copysource ? `export const code=${JSON.stringify(code)}` : ''}`,
               mode,
             )
-          }
-          return {
-            code,
-            map: ms.generateMap(),
+            return {
+              code,
+              map: ms.generateMap({ source: id, includeContent: true }),
+            }
           }
         }
       },
@@ -53,16 +71,10 @@ export const sfcmore = createUnplugin((options: { version?: string; extensions?:
             if (!conf.build.rollupOptions.output)
               conf.build.rollupOptions.output = {}
 
-            conf.build.rollupOptions.output.chunkFileNames = `[name]${
-                options.version ? `@${options.version}` : ''
-                    }.js`
-            conf.build.rollupOptions.output.assetFileNames = `[name]${
-                options.version ? `@${options.version}` : ''
-                    }[extname]`
-            conf.build.rollupOptions.output.manualChunks = (id: string) => {
-              if (id.endsWith('.vue?vue&addon'))
-                return `${basename(id, '.vue?vue&addon')}.addon`
-            }
+            const { output } = conf.build.rollupOptions
+            output.chunkFileNames = output.chunkFileNames ?? chunkFileNames(version)
+            output.assetFileNames = output.assetFileNames ?? assetFileNames(version)
+            output.manualChunks = output.manualChunks || manualChunks
           }
         },
       },
@@ -72,7 +84,7 @@ export const sfcmore = createUnplugin((options: { version?: string; extensions?:
       enforce: 'post',
 
       load(id: string) {
-        if (id.endsWith('?vue&addon') && isLib)
+        if (id.endsWith(addonPostFix) && isLib)
           return codeMap.get(id)
       },
       transform(code: string, id: string) {
@@ -80,27 +92,44 @@ export const sfcmore = createUnplugin((options: { version?: string; extensions?:
           const ms = new MagicString(code)
 
           if (mode === 'serve') {
-            ms.appendRight(code.length, codeMap.get(`${id}?vue&addon`) as string)
+            ms.appendRight(code.length, codeMap.get(`${id}${addonPostFix}`) as string)
             return {
-              code: ms.toString(), map: ms.generateMap(),
+              code: ms.toString(), map: ms.generateMap({ source: id, includeContent: true }),
 
             }
           }
 
           if (isLib) {
             const addonCode
-            = `export async function addon() {
+              = `export async function addon() {
                    return await import("${id}?vue&addon");
                  }`
 
             ms.appendRight(code.length, `${addonCode}\n${addonCss('import.meta.url.replace(/\\.js(.*)/,\'.css\')')}`)
 
             return {
-              code: ms.toString(), map: ms.generateMap(),
+              code: ms.toString(), map: ms.generateMap({ source: id, includeContent: true }),
 
             }
           }
         }
+      },
+    },
+    {
+      enforce: 'pre',
+      name: 'vue-meta',
+      transform(code: string, id: string) {
+        if (meta && id.endsWith('.vue') && fs.existsSync(id) && codeMap.has(`${id}${addonPostFix}`)) {
+          const meta = tsconfigChecker.getComponentMeta(id)
+          addAddon(id, `\nexport const metadata=${JSON.stringify(meta)}`, mode)
+        }
+      },
+      vite: {
+        handleHotUpdate: clearCache,
+        watchChange: clearCache,
+      },
+      rollup: {
+        watchChange: clearCache,
       },
     },
   ] as any

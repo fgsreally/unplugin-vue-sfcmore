@@ -42,7 +42,8 @@
   "dependencies": {
     "@vue/compiler-dom": "^3.2.45",
     "magic-string": "^0.26.7",
-    "unplugin": "^1.0.0"
+    "unplugin": "^1.0.0",
+    "vue-component-meta": "^1.2.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^0.31.0",
