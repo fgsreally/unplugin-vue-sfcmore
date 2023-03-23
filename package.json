@@ -1,6 +1,6 @@
 {
   "name": "unplugin-vue-sfcmore",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "custom sfc resolver",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
