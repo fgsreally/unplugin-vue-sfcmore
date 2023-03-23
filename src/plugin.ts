@@ -7,14 +7,14 @@ import { createComponentMetaChecker } from 'vue-component-meta'
 import { compile } from './compiler'
 import { addonCss, defaultExtensions } from './extensions'
 import type { Extension } from './type'
-import { addonPostFix, assetFileNames, chunkFileNames, manualChunks } from './utils'
+import { assetFileNames, chunkFileNames } from './utils'
 
 const codeMap: Map<string, string> = new Map()
 
-export function addAddon(id: string, addon: string, mode: string) {
-  id = id + addonPostFix
+export function addAddon(id: string, code: string, mode: string) {
+  id = getAddonId(id)
   const origin = codeMap.get(id) || `export const unplugin_vue_sfcmore="${mode}"\n`
-  codeMap.set(id, origin + addon)
+  codeMap.set(id, origin + code)
 }
 
 export const sfcmore = createUnplugin((options: { meta?: boolean; version?: string; extensions?: Extension[]; copysource?: boolean; checkerOptions?: MetaCheckerOptions } = {}) => {
@@ -38,7 +38,7 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
       name: 'sfcmore:pre',
       enforce: 'pre',
       transform(source: string, id: string) {
-        if (isSfc(id) && !codeMap.has(`${id}${addonPostFix}`)) {
+        if (isSfc(id) && !codeMap.has(getAddonId(id))) {
           const { ms, addon } = compile(
             source,
             (extensions || defaultExtensions),
@@ -74,7 +74,6 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
             const { output } = conf.build.rollupOptions
             output.chunkFileNames = output.chunkFileNames ?? chunkFileNames(version)
             output.assetFileNames = output.assetFileNames ?? assetFileNames(version)
-            output.manualChunks = output.manualChunks || manualChunks
           }
         },
       },
@@ -82,17 +81,21 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
     {
       name: 'sfcmore:post',
       enforce: 'post',
-
+      resolveId(id: string) {
+        if (id.endsWith('.addon.js'))
+          return id
+      },
       load(id: string) {
-        if (id.endsWith(addonPostFix) && isLib)
+        if (id.endsWith('.addon.js') && isLib)
+
           return codeMap.get(id)
       },
       transform(code: string, id: string) {
-        if (isSfc(id) && codeMap.has(`${id}?vue&addon`)) {
+        if (isSfc(id) && codeMap.has(getAddonId(id))) {
           const ms = new MagicString(code)
 
           if (mode === 'serve') {
-            ms.appendRight(code.length, codeMap.get(`${id}${addonPostFix}`) as string)
+            ms.appendRight(code.length, codeMap.get(getAddonId(id)) as string)
             return {
               code: ms.toString(), map: ms.generateMap({ source: id, includeContent: true }),
 
@@ -102,7 +105,7 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
           if (isLib) {
             const addonCode
               = `export async function addon() {
-                   return await import("${id}?vue&addon");
+                   return await import("${getAddonId(id)}");
                  }`
 
             ms.appendRight(code.length, `${addonCode}\n${addonCss('import.meta.url.replace(/\\.js(.*)/,\'.css\')')}`)
@@ -119,7 +122,7 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
       enforce: 'pre',
       name: 'vue-meta',
       transform(code: string, id: string) {
-        if (meta && id.endsWith('.vue') && fs.existsSync(id) && codeMap.has(`${id}${addonPostFix}`)) {
+        if (meta && id.endsWith('.vue') && fs.existsSync(id) && codeMap.has(getAddonId(id))) {
           const meta = tsconfigChecker.getComponentMeta(id)
           addAddon(id, `\nexport const metadata=${JSON.stringify(meta)}`, mode)
         }
@@ -137,4 +140,8 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
 
 function isSfc(id: string) {
   return id.endsWith('.vue')
+}
+
+function getAddonId(id: string) {
+  return id.replace(/\.vue/, '.addon.js')
 }
