@@ -10,7 +10,7 @@ import type { Extension } from './type'
 import { assetFileNames, chunkFileNames } from './utils'
 
 const codeMap: Map<string, string> = new Map()
-
+export const fileSet = new Set<string>()
 export function addAddon(id: string, code: string, mode: string) {
   id = getAddonId(id)
   const origin = codeMap.get(id) || `export const unplugin_vue_sfcmore="${mode}"\n`
@@ -39,12 +39,15 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
       enforce: 'pre',
       transform(source: string, id: string) {
         if (isSfc(id) && !codeMap.has(getAddonId(id))) {
+          fileSet.has(id) && fileSet.delete(id)
+
           const { ms, addon } = compile(
             source,
             (extensions || defaultExtensions),
           )
           const code = ms.toString()
           if (code !== source) {
+            fileSet.add(id)
             addAddon(
               id,
               `${addon}\n${copysource ? `export const code=${JSON.stringify(code)}` : ''}`,
