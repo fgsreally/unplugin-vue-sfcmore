@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-
-defineProps<{ msg: string }>()
+/** 这是一个helloworld组件 */
+defineProps<{ msg: number }>()
 
 const count = ref(0)
 </script>

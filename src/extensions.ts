@@ -24,14 +24,6 @@ export const Info = {
   },
 }
 
-// export const Type = {
-//   tag: 'script',
-//   key: 'type',
-//   transformer: (code: string) => {
-//     return `export const type=${JSON.stringify(code)}`
-//   },
-// }
-
 export const addonCss = (url: string) => `
   export const css= ${url}
   `

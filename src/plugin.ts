@@ -17,12 +17,12 @@ export function addAddon(id: string, code: string, mode: string) {
   codeMap.set(id, origin + code)
 }
 
-export const sfcmore = createUnplugin((options: { meta?: boolean; version?: string; extensions?: Extension[]; copysource?: boolean; checkerOptions?: MetaCheckerOptions } = {}) => {
+export const sfcmore = createUnplugin((options: { meta?: boolean; version?: string; extensions?: Extension[]; copysource?: boolean; checkerOptions?: MetaCheckerOptions; write?: boolean } = {}) => {
   let isLib = false
 
   let mode: string
 
-  const { checkerOptions = {}, meta = true, version, copysource, extensions } = options
+  const { checkerOptions = {}, meta = true, version, copysource, extensions, write = true } = options
   const tsconfigChecker = createComponentMetaChecker(
     // Write your tsconfig path
     join(process.cwd(), 'tsconfig.json'),
@@ -94,7 +94,7 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
           return codeMap.get(id)
       },
       transform(code: string, id: string) {
-        if (isSfc(id) && codeMap.has(getAddonId(id))) {
+        if (write && isSfc(id) && codeMap.has(getAddonId(id))) {
           const ms = new MagicString(code)
 
           if (mode === 'serve') {
@@ -133,9 +133,12 @@ export const sfcmore = createUnplugin((options: { meta?: boolean; version?: stri
       vite: {
         handleHotUpdate: clearCache,
         watchChange: clearCache,
+        buildEnd: clearCache,
       },
       rollup: {
         watchChange: clearCache,
+        buildEnd: clearCache,
+
       },
     },
   ] as any

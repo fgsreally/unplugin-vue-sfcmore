@@ -15,7 +15,9 @@ export default defineConfig({
     },
   },
 
-  plugins: [vue(), sfc()],
+  plugins: [vue(), sfc({
+    write: true,
+  })],
   server: {
     port: 4000,
   },
