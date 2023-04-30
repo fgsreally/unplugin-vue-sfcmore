@@ -17,7 +17,17 @@ export function addAddon(id: string, code: string, mode: string) {
   codeMap.set(id, origin + code)
 }
 
-export const sfcmore = createUnplugin((options: { meta?: boolean; version?: string; extensions?: Extension[]; copysource?: boolean; checkerOptions?: MetaCheckerOptions; write?: boolean } = {}) => {
+export const sfcmore = createUnplugin((options: {
+  /** 是否生成vue的meta */
+  meta?: boolean
+  version?: string
+  extensions?: Extension[]
+  /** 是否加入源码 */
+  copysource?: boolean
+  checkerOptions?: MetaCheckerOptions
+  /** 是否输出产物 */
+
+  write?: boolean } = {}) => {
   let isLib = false
 
   let mode: string
