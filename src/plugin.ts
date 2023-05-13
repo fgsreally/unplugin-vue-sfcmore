@@ -5,18 +5,42 @@ import MagicString from 'magic-string'
 import type { MetaCheckerOptions } from 'vue-component-meta'
 import { createComponentMetaChecker } from 'vue-component-meta'
 import { compile } from './compiler'
-import { addonCss, defaultExtensions } from './extensions'
+import { defaultExtensions } from './extensions'
 import type { Extension } from './type'
 import { assetFileNames, chunkFileNames } from './utils'
 
-const codeMap: Map<string, string> = new Map()
-export const fileSet = new Set<string>()
-export function addAddon(id: string, code: string, mode: string) {
-  id = getAddonId(id)
-  const origin = codeMap.get(id) || `export const unplugin_vue_sfcmore="${mode}"\n`
-  codeMap.set(id, origin + code)
+const codeMap: Map<string, Record<string, string>> = new Map()
+export function setAddon(fileId: string, tag: string, content: string) {
+  fileId = getAddonId(fileId)
+  if (!codeMap.has(fileId)) {
+    console.warn('addon is not initialized yet')
+  }
+  else {
+    const addonMap = codeMap.get(fileId)!
+    addonMap[tag] = content
+  }
 }
 
+function isInitlize(fileId: string) {
+  fileId = getAddonId(fileId)
+
+  return codeMap.has(fileId)
+}
+
+function initAddon(fileId: string, addonMap: Record<string, string>) {
+  fileId = getAddonId(fileId)
+  codeMap.set(fileId, addonMap)
+}
+
+function createCode(fileId: string) {
+  if (isInitlize(fileId)) {
+    fileId = getAddonId(fileId)
+
+    const addonMap = codeMap.get(fileId)!
+    return Object.entries(addonMap).map(([tag, content]) => `ret.${tag}=${content}`).join('\n')
+  }
+  return ''
+}
 export const sfcmore = createUnplugin((options: {
   /** 是否生成vue的meta */
   meta?: boolean
@@ -26,13 +50,14 @@ export const sfcmore = createUnplugin((options: {
   copysource?: boolean
   checkerOptions?: MetaCheckerOptions
   /** 是否输出产物 */
-
-  write?: boolean } = {}) => {
+  filter?: (fileId: string) => boolean
+  write?: boolean
+} = {}) => {
   let isLib = false
 
   let mode: string
 
-  const { checkerOptions = {}, meta = true, version, copysource, extensions, write = true } = options
+  const { checkerOptions = {}, meta = true, version, copysource, extensions, write = true, filter = () => true } = options
   const tsconfigChecker = createComponentMetaChecker(
     // Write your tsconfig path
     join(process.cwd(), 'tsconfig.json'),
@@ -48,32 +73,35 @@ export const sfcmore = createUnplugin((options: {
       name: 'sfcmore:pre',
       enforce: 'pre',
       transform(source: string, id: string) {
-        if (isSfc(id) && !codeMap.has(getAddonId(id))) {
-          fileSet.has(id) && fileSet.delete(id)
-
-          const { ms, addon } = compile(
+        if (isSfc(id) && filter(id) && !isInitlize(id)) {
+          const { ms, addonMap } = compile(
             source,
             (extensions || defaultExtensions),
           )
+          initAddon(id, addonMap)
           const code = ms.toString()
-          if (code !== source) {
-            fileSet.add(id)
-            addAddon(
-              id,
-              `${addon}\n${copysource ? `export const code=${JSON.stringify(code)}` : ''}`,
-              mode,
-            )
-            return {
-              code,
-              map: ms.generateMap({ source: id, includeContent: true }),
-            }
+          if (copysource)
+            setAddon(id, 'source', JSON.stringify(code))
+
+          return {
+            code,
+            map: ms.generateMap({ source: id, includeContent: true }),
           }
+          // if (code !== source) {
+          //   fileSet.add(id)
+          //   addAddon(
+          //     id,
+          //     `${addon}\n${copysource ? `export const code=${JSON.stringify(code)}` : ''}`,
+          //     mode,
+          //   )
+
+          // }
         }
       },
       vite: {
         config(conf: any, { command }: any) {
           mode = command
-          if (conf.build.lib && command === 'build') {
+          if (conf.build?.lib && command === 'build') {
             isLib = true
             if (!conf.build)
               conf.build = {}
@@ -100,15 +128,15 @@ export const sfcmore = createUnplugin((options: {
       },
       load(id: string) {
         if (id.endsWith('.addon.js') && isLib)
-
-          return codeMap.get(id)
+          return `export default function(){const ret={}\n${createCode(id)}\nreturn ret} `
+        // return codeMap.get(id)
       },
       transform(code: string, id: string) {
-        if (write && isSfc(id) && codeMap.has(getAddonId(id))) {
+        if (write && isSfc(id) && isInitlize(id)) {
           const ms = new MagicString(code)
 
           if (mode === 'serve') {
-            ms.appendRight(code.length, codeMap.get(getAddonId(id)) as string)
+            ms.appendRight(code.length, `export function addon(){const ret={}\n${createCode(id)}\nreturn ret} `)
             return {
               code: ms.toString(), map: ms.generateMap({ source: id, includeContent: true }),
 
@@ -118,10 +146,12 @@ export const sfcmore = createUnplugin((options: {
           if (isLib) {
             const addonCode
               = `export async function addon() {
-                   return await import("${getAddonId(id)}");
+                   return (await import("${getAddonId(id)}")).default();
                  }`
 
-            ms.appendRight(code.length, `${addonCode}\n${addonCss('import.meta.url.replace(/\\.js(.*)/,\'.css\')')}`)
+            setAddon(id, 'css', 'import.meta.url.replace(/\\.addon\\.js(.*)/,\'.css\')')
+
+            ms.appendRight(code.length, addonCode)
 
             return {
               code: ms.toString(), map: ms.generateMap({ source: id, includeContent: true }),
@@ -134,10 +164,10 @@ export const sfcmore = createUnplugin((options: {
     {
       enforce: 'pre',
       name: 'vue-meta',
-      transform(code: string, id: string) {
-        if (meta && id.endsWith('.vue') && fs.existsSync(id) && codeMap.has(getAddonId(id))) {
+      transform(_: string, id: string) {
+        if (meta && id.endsWith('.vue') && fs.existsSync(id) && isInitlize(id)) {
           const meta = tsconfigChecker.getComponentMeta(id)
-          addAddon(id, `\nexport const metadata=${JSON.stringify(meta)}`, mode)
+          setAddon(id, 'metadata', JSON.stringify(meta))
         }
       },
       vite: {

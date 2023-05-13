@@ -1,8 +1,8 @@
 export const Props = {
   tag: 'props',
   transformer: (code: string) => {
-    return `export const props=(()=>{${code}})()`
-  },
+    return `(()=>{${code}})()`
+  }, // export const props=
 }
 
 export const Server = {
@@ -13,19 +13,15 @@ export const Server = {
 export const Docs = {
   tag: 'docs',
   transformer: (code: string) => {
-    return `export const docs=${JSON.stringify(code)}`
-  },
+    return `${JSON.stringify(code)}`
+  }, // export const docs=
 }
 
 export const Info = {
   tag: 'info',
   transformer: (code: string) => {
-    return `export const info=${code}`
-  },
+    return `${code}`
+  }, // export const info=
 }
-
-export const addonCss = (url: string) => `
-  export const css= ${url}
-  `
 
 export const defaultExtensions = [Docs, Server, Props, Info]
