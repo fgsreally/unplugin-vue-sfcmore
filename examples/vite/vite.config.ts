@@ -17,6 +17,7 @@ export default defineConfig({
 
   plugins: [vue(), sfc({
     write: true,
+    async: false,
     meta: true,
   })],
   server: {

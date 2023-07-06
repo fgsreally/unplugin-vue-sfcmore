@@ -42,6 +42,8 @@ function createCode(fileId: string) {
   return ''
 }
 export const sfcmore = createUnplugin((options: {
+  /** 产物是否异步 */
+  async?: boolean
   /** 是否生成vue的meta */
   meta?: boolean
   version?: string
@@ -57,7 +59,7 @@ export const sfcmore = createUnplugin((options: {
 
   let mode: string
 
-  const { checkerOptions = {}, meta = true, version, copysource, extensions, write = true, filter = () => true } = options
+  const { checkerOptions = {}, meta = true, version, copysource, extensions, write = true, filter = () => true, async = true } = options
   const tsconfigChecker = createComponentMetaChecker(
     // Write your tsconfig path
     join(process.cwd(), 'tsconfig.json'),
@@ -145,9 +147,11 @@ export const sfcmore = createUnplugin((options: {
 
           if (isLib) {
             const addonCode
-              = `export async function addon() {
+              = async
+                ? `export async function addon() {
                    return (await import("${getAddonId(id)}")).default();
                  }`
+                : `export function addon(){const ret={}\n${createCode(id)}\nreturn ret} `
 
             setAddon(id, 'css', 'import.meta.url.replace(/\\.addon\\.js(.*)/,\'.css\')')
 
