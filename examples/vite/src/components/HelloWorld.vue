@@ -1,10 +1,4 @@
-<script setup lang="ts">
-import { ref } from 'vue'
-/** 这是一个helloworld组件 */
-defineProps<{ msg: number }>()
 
-const count = ref(0)
-</script>
 
 <props lang="ts">
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -13,12 +7,9 @@ return [{ name: 'test' }]
 </props>
 
 <template>
-  <h1>{{ msg }}</h1>
 
   <div class="card">
-    <button type="button" @click="count++">
-      count is {{ count }}
-    </button>
+ 
     <p>
       Edit
       <code>components/HelloWorld.vue</code> to test HMR

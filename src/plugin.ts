@@ -138,7 +138,7 @@ export const sfcmore = createUnplugin((options: {
           const ms = new MagicString(code)
 
           if (mode === 'serve') {
-            ms.appendRight(code.length, `export function addon(){const ret={}\n${createCode(id)}\nreturn ret} `)
+            ms.appendRight(code.length, `\nexport function addon(){const ret={}\n${createCode(id)}\nreturn ret} `)
             return {
               code: ms.toString(), map: ms.generateMap({ source: id, includeContent: true }),
 
@@ -148,10 +148,10 @@ export const sfcmore = createUnplugin((options: {
           if (isLib) {
             const addonCode
               = async
-                ? `export async function addon() {
+                ? `\nexport async function addon() {
                    return (await import("${getAddonId(id)}")).default();
                  }`
-                : `export function addon(){const ret={}\n${createCode(id)}\nreturn ret} `
+                : `\nexport function addon(){const ret={}\n${createCode(id)}\nreturn ret} `
 
             setAddon(id, 'css', 'import.meta.url.replace(/\\.addon\\.js(.*)/,\'.css\')')
 
